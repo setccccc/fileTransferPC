@@ -1,0 +1,121 @@
+                            ArrayList<File> fileList = new ArrayList<>();
+                            tickState = TICK_BUSY;
+                            revFileList.clear();
+                            int fn = dis.readInt();//文件数量
+                            int fileLenArr[] = new int[fn];//文件长度集合
+                            int flens =  dis.readInt();//文件全部长度
+                            for(int i=0;i<fn;i++){
+                                int filenamelen = dis.readInt();
+                                p("读取到"+filenamelen+"字节文件名");
+                                byte[] fileNameBuf=new byte[filenamelen];
+                                inFromServer.read(fileNameBuf,0,filenamelen);//然后继续堵塞读取，接收的是文件名
+                                fileName=new String(fileNameBuf,"utf-8");//将文件名译码为utf-8字符串
+                                int fileSize = dis.readInt();//读取文件字节长度
+                                File f=new File("./"+fileName);//将接收的文件放在程序所在文件下
+                                if(f.exists()) f.delete();//如果f盘存在这个文件就实现删除，否则就创建一个新的文件
+                                else f.createNewFile();
+                                fileList.add(f);
+                                revFileList.add(f);
+                                fileLenArr[i]=fileSize;
+                            }
+
+                            /**
+                             * 这部分接收代码写得有点烂，逻辑不清晰，下次要改进
+                             */
+                            int cnt = 0;//计数接收到多少文件字节长度
+                            speedCheck sp = new speedCheck();
+                            sp.checkStart();
+                            String oldtxt = infoWin.getText();
+                            oldtxt+=getCurrentTime()+" "+"读取到文件名:"+fileList.get(0).getName()+"\n";
+                            oldtxt+=getCurrentTime()+" "+"读取到文件长度:"+fileLenArr[0]+"\n";
+                            oldtxt+=getCurrentTime()+" "+"开始接收文件"+"\n";
+                            FileOutputStream fr = new FileOutputStream(fileList.get(0));
+                            int index = 0;
+                            //read是堵塞
+                            long preT,curT; int timecnt = 0;
+                            preT = System.currentTimeMillis();
+                            while((len=inFromServer.read(buf,0,8192))!=-1){
+                                cnt+=len;
+                                timecnt+=len;
+                                if(cnt == fileLenArr[index]){
+                                    fr.write(buf,0,len);
+                                    fr.close();
+                                    refreshSpeedInfo(oldtxt+"哈哈哈哈不会执行接收中，百分比"+sp.百分比(cnt,cnt) + ",速度" + sp.speed(timecnt)+"\n");
+                                    /**
+                                     * 这里需要改进!!!，万一有中间文件在这里执行了怎么办
+                                     */
+                                    p("文件接收完毕");
+                                    break;
+                                }else if(cnt > fileLenArr[index]){
+                                    //对于超出的部分，需要逐一比较长度，防止超出部分超过一个文件的大小
+                                    //System.out.println("正在接收2");
+                                    int diff = cnt - fileLenArr[index];//多余的字节数
+                                    //调试
+                                    /*System.out.println("\n崩溃的文件是"+fileList.get(index).getName()+
+                                            "崩溃的缓冲区长度buf.length="+buf.length+"崩溃的len为"+
+                                            len+"崩溃的diff为"+diff+"崩溃的文件大小为" +
+                                            fileLenArr[index]+"崩溃的cnt为"+cnt+"\n");*/
+                                    //剩余的字节写入当前文件
+                                    fr.write(buf,0,len-diff);
+                                    fr.close();
+                                    refreshSpeedInfo(oldtxt+"接收中，百分比"+sp.百分比(cnt,cnt) + ",速度" + sp.speed(timecnt)+"\n");
+                                    p(" 接收文件完毕");
+                                    //指向下一个文件
+                                    index++;
+                                    if(index==fn) break;//如果到末尾了就退出
+                                    int bufNewIndex = len-diff;//剩余字节开始下标
+                                    //开始循环,循环结束条件为将多余的diff字节处理完毕
+                                    boolean isBreak = false;
+                                    while(diff>0){
+                                        //打开新的文件流
+                                        fr = new FileOutputStream(fileList.get(index));
+                                        //判断新的文件的大小和diff
+                                        if(diff>fileLenArr[index]){
+                                            //如果多余的字节数大于文件大小就写入这个文件
+                                            oldtxt = infoWin.getText();
+                                            oldtxt+=getCurrentTime()+" "+"读取到文件名:"+fileList.get(index).getName()+"\n";
+                                            oldtxt+=getCurrentTime()+" "+"读取到文件长度:"+fileLenArr[index]+"\n";
+                                            oldtxt+=getCurrentTime()+" "+"开始接收文件"+"\n";
+                                            refreshSpeedInfo(oldtxt);
+                                            fr.write(buf,bufNewIndex,fileLenArr[index]);
+                                            fr.close();
+                                            //更新剩下下标
+                                            bufNewIndex = bufNewIndex+fileLenArr[index];
+                                            diff -= fileLenArr[index];//剩下的字节数减小
+                                            index++;//指向下一个文件
+                                            if(index==fn) isBreak = true;
+                                            refreshSpeedInfo(oldtxt+"接收中，百分比"+sp.百分比(cnt,cnt) + ",速度" + sp.speed(timecnt)+"\n");
+                                            p(" 接收文件完毕");
+                                            continue;//继续新一轮判断
+                                        }else{
+                                            oldtxt = infoWin.getText();
+                                            oldtxt+=getCurrentTime()+" "+"读取到文件名:"+fileList.get(index).getName()+"\n";
+                                            oldtxt+=getCurrentTime()+" "+"读取到文件长度:"+fileLenArr[index]+"\n";
+                                            oldtxt+=getCurrentTime()+" "+"开始接收文件"+"\n";
+                                            refreshSpeedInfo(oldtxt);
+                                            fr.write(buf,bufNewIndex,diff);//剩余字节全部写入
+                                            if(diff == fileLenArr[index]){
+                                                fr.close();
+                                                refreshSpeedInfo(oldtxt+"接收中，百分比"+sp.百分比(cnt,cnt) + ",速度" + sp.speed(timecnt)+"\n");
+                                                p(" 接收文件完毕");
+                                                isBreak = true;
+                                                break;
+                                            }
+                                            cnt = diff;//这个非常重要
+                                            sp = new speedCheck();
+                                            sp.checkStart();
+                                            break;//继续去读文件
+                                        }
+                                    }
+                                    if(isBreak) break;
+                                    else continue;
+                                }
+                                fr.write(buf,0,len);
+                                curT = System.currentTimeMillis();
+                                if(curT-preT>100){
+                                    refreshSpeedInfo(oldtxt+"接收中，百分比"+sp.百分比(cnt,fileLenArr[index]) + ",速度" + sp.speed(timecnt)+"\n");
+                                    preT = curT;
+                                    timecnt = 0;
+                                }
+                            }
+                             tickState = TICK_IDLE;

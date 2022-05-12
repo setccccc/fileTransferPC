@@ -1,0 +1,8 @@
+        /*new Thread(() -> {
+            try {
+                Thread.sleep(100);//在更新Area后，稍稍延时，否则getMaximum（）获得的数据可能不是最后的最大值，无法滚动到最后一行
+                scrollBar.setValue(scrollBar.getMaximum());
+            } catch (InterruptedException ex) {
+                ex.printStackTrace();
+            }
+        }).start();*/
