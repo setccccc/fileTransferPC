@@ -10,7 +10,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.*;
-import java.lang.reflect.Array;
 import java.net.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -32,8 +31,12 @@ public class socketServer {
     private JTextArea msgArea;//消息敲入区域
     private ArrayList<File> revFileList = new ArrayList<>();//接收到的文件列表
     private volatile Boolean msgRun=true;
-    private String filepath = ".";
+    private String fileDir = "."+File.separator+"test"+File.separator;
 	public socketServer(){
+        File dir = new File(fileDir);
+        if(!dir.exists()){
+            dir.mkdir();
+        }
 		jf = new JFrame();
 		jf.setLayout(null);
         jf.setSize(800,600);
@@ -79,7 +82,7 @@ public class socketServer {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    Runtime.getRuntime().exec("explorer.exe "+filepath);
+                    Runtime.getRuntime().exec("explorer.exe "+ fileDir);
                 } catch (IOException e1) {
                     e1.printStackTrace();
                 }
@@ -313,10 +316,12 @@ public class socketServer {
                             inFromServer.read(fileNameBuf,0,filenamelen);//然后继续堵塞读取，接收的是文件名
                             fileName=new String(fileNameBuf,"utf-8");//将文件名译码为utf-8字符串
                             int fileSize = dis.readInt();//读取文件字节长度
-                            File f=new File("./"+fileName);//将接收的文件放在程序所在文件下
+                            File f=new File(fileDir +fileName);//将接收的文件放在程序所在文件下
                             revFileList.add(f);
                             if(f.exists()) f.delete();//如果f盘存在这个文件就实现删除，否则就创建一个新的文件
-                            else f.createNewFile();
+                            else{
+                                f.createNewFile();
+                            }
                             FileOutputStream fr = new FileOutputStream(f);
                             int cnt = 0;//计数接收到多少文件字节长度
                             speedCheck sp = new speedCheck();
@@ -361,7 +366,7 @@ public class socketServer {
                                 inFromServer.read(fileNameBuf,0,filenamelen);//然后继续堵塞读取，接收的是文件名
                                 fileName=new String(fileNameBuf,"utf-8");//将文件名译码为utf-8字符串
                                 int fileSize = dis.readInt();//读取文件字节长度
-                                File f=new File("./"+fileName);//将接收的文件放在程序所在文件下
+                                File f=new File(fileDir +fileName);//将接收的文件放在程序所在文件下
                                 fileList.add(f);
                                 revFileList.add(f);
                                 fileLenArr[i]=fileSize;
