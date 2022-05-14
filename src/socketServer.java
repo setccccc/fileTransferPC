@@ -41,6 +41,7 @@ public class socketServer {
         jf.setUndecorated(true);
         initOther();
         initReDirect();//Visible之后才能够打印，否则有问题，要记住
+        initBorder();
 		jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		jf.setVisible(true);
 
@@ -51,11 +52,29 @@ public class socketServer {
             e.printStackTrace();
         }
         startRevThread();
-	}
+
+        reSizeEvent dg = new reSizeEvent(jf);
+        /**添加两个监听器**/
+        jf.addMouseListener(dg);
+        jf.addMouseMotionListener(dg);
+        jf.addComponentListener(new WinSizeChange(this));//监听窗口大小改变事件
+
+    }
+
+    mybutton1 mb1,mb2,mb3;
+    private void initBorder() {
+        mb1 = new mybutton1(mybutton1.CLOSE,jf);
+        mb1.setBounds(jf.getWidth()-50,8,20,20);
+        mb2 = new mybutton1(mybutton1.MAX,jf);
+        mb2.setBounds(jf.getWidth()-100,8,20,20);
+        mb3 = new mybutton1(mybutton1.MIN,jf);
+        mb3.setBounds(jf.getWidth()-150,8,20,20);
+        jf.add(mb1); jf.add(mb2); jf.add(mb3);
+    }
 
     private void initOther() {
 	    openDir = new JButton("directory");
-	    openDir.setBounds(10,10,100,30);
+	    openDir.setBounds(10,60,100,30);
 	    openDir.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -69,7 +88,7 @@ public class socketServer {
 	    jf.add(openDir);
 
 	    copyFile = new JButton("copy");
-	    copyFile.setBounds(230,10,100,30);
+	    copyFile.setBounds(230,60,100,30);
 	    copyFile.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -85,7 +104,7 @@ public class socketServer {
 	    jf.add(copyFile);
 
 	    sendFile = new JButton("send");
-	    sendFile.setBounds(120,10,100,30);
+	    sendFile.setBounds(120,60,100,30);
 	    sendFile.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
