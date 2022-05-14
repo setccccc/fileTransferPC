@@ -14,7 +14,7 @@ public class speedCheck {
     }
     // 传入当前字节数
     // 返回速度字符串,比如10KB/s或者1MB/s或者500Byte/s
-    public static float CHECK_TIME = 100.0f;
+    public static float CHECK_TIME = 1000.0f;
     public static float CHECK_TIME_INV = 1000.0f/CHECK_TIME;
     public String speed(long curbm){
         curbm*=CHECK_TIME_INV;

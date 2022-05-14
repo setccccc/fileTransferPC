@@ -26,6 +26,7 @@ public class socketServer {
     private JFrame jf;
     private JButton openDir;//打开接收文件所在文件夹按钮
     private JButton sendFile;//发送文件按钮，点击后选择一个文件发送到手机
+    private JLabel statusBar;
     private JButton sendMsg;//聊天信息发送按钮
     private JButton copyFile;//拷贝接收到的文件
     private JTextArea msgArea;//消息敲入区域
@@ -39,7 +40,7 @@ public class socketServer {
         }
 		jf = new JFrame();
 		jf.setLayout(null);
-        jf.setSize(800,600);
+        jf.setSize(800,630);
 		jf.setLocationRelativeTo(null);//居中，必须在设置size后调用
         jf.setUndecorated(true);
         initOther();
@@ -146,6 +147,11 @@ public class socketServer {
             }
         });
 	    jf.add(sendMsg);
+
+        statusBar = new JLabel("status:Normal");
+        statusBar.setBounds(0,600,800,30);
+        statusBar.setFont(new Font("宋体", Font.PLAIN,20));
+        jf.add(statusBar);
     }
 
     public ArrayList<File> selectedFileList = new ArrayList<>();
@@ -184,12 +190,11 @@ public class socketServer {
                 int cnt = 0,timecnt=0;
                 long preT,curT;
                 preT = System.currentTimeMillis();
-                String oldtxt = infoWin.getText();
                 if(i>=1){
-                    oldtxt+=getCurrentTime()+" "+"文件"+file.getName()+"传输完毕\n";
+                    p(getCurrentTime()+" "+"文件"+file.getName()+"传输完毕\n");
                 }
-                oldtxt+=getCurrentTime()+" "+"文件"+file.getName()+"开始传输\n";//之前不能调用p函数，否则延时导致无法及时通过getText获取
-                refreshSpeedInfo(oldtxt+"发送中，百分比"+sp.百分比(cnt,fileSize) + ",速度" + sp.speed(timecnt)+"\n");
+                p(getCurrentTime()+" "+"文件"+file.getName()+"开始传输\n");//之前不能调用p函数，否则延时导致无法及时通过getText获取
+                statusBar.setText("发送中，百分比"+sp.百分比(cnt,fileSize) + ",速度" + sp.speed(timecnt)+"\n");
                 while((length=f.read(b,0,b.length))!=-1){
                     serverOutputStream.write(b, 0, length);
                     //速度检测
@@ -197,12 +202,12 @@ public class socketServer {
                     timecnt+=length;
                     curT = System.currentTimeMillis();
                     if(curT-preT>speedCheck.CHECK_TIME){
-                        refreshSpeedInfo(oldtxt+"发送中,百分比"+sp.百分比(cnt,fileSize)+",速度"+sp.speed(timecnt)+"\n");
+                        statusBar.setText("发送中,百分比"+sp.百分比(cnt,fileSize)+",速度"+sp.speed(timecnt)+"\n");
                         preT = curT;
                         timecnt=0;
                     }
                 }
-                refreshSpeedInfo(oldtxt+"发送中,百分比100%\n");
+                statusBar.setText("发送中,百分比100%\n");
                 f.close();
                 serverOutputStream.flush();
                 if(i==selectedFileList.size()-1)
@@ -245,12 +250,12 @@ public class socketServer {
                 cnt+=length;
                 curT = System.currentTimeMillis();
                 if(curT-preT>speedCheck.CHECK_TIME) {
-                    refreshSpeedInfo(oldtxt+"发送中，百分比"+sp.百分比(cnt,fileSize) + ",速度" + sp.speed(timecnt));
+                    statusBar.setText("发送中，百分比"+sp.百分比(cnt,fileSize) + ",速度" + sp.speed(timecnt));
                     preT = curT;
                     timecnt=0;
                 }
             }
-            refreshSpeedInfo(oldtxt+"发送中，百分比"+sp.百分比(fileSize,fileSize) + ",速度" + sp.speed(timecnt));
+            statusBar.setText("发送中，百分比"+sp.百分比(fileSize,fileSize) + ",速度" + sp.speed(timecnt));
             System.out.println("");
             fis.close();
             serverOutputStream.flush();
@@ -326,11 +331,7 @@ public class socketServer {
                             int cnt = 0;//计数接收到多少文件字节长度
                             speedCheck sp = new speedCheck();
                             sp.checkStart();
-                            String oldtxt = infoWin.getText();
-                            oldtxt+=getCurrentTime()+" "+"读取到文件名:"+fileName+"\n";
-                            oldtxt+=getCurrentTime()+" "+"读取到文件长度:"+fileSize+"\n";
-                            oldtxt+=getCurrentTime()+" "+"开始接收文件"+"\n";
-                            long preT,curT;
+                            long preT,curT;//当前时间，上一个时间
                             int timecnt = 0;
                             preT = System.currentTimeMillis();
                             while((len=inFromServer.read(buf,0,8192))!=-1)
@@ -339,14 +340,14 @@ public class socketServer {
                                 cnt+=len;
                                 timecnt+=len;
                                 curT = System.currentTimeMillis();
-                                if(curT-preT>100) {
-                                    refreshSpeedInfo(oldtxt+"接收中，百分比"+sp.百分比(cnt,fileSize) + ",速度" + sp.speed(timecnt)+"\n");
+                                if(curT-preT>speedCheck.CHECK_TIME) {
+                                    statusBar.setText("接收中，百分比"+sp.百分比(cnt,fileSize) + ",速度" + sp.speed(timecnt)+"\n");
                                     preT = curT;
                                     timecnt = 0;
                                 }
                                 if(cnt == fileSize){
                                     fr.close();
-                                    refreshSpeedInfo(oldtxt+"接收中，百分比"+sp.百分比(fileSize,fileSize) + ",速度" + sp.speed(timecnt)+"\n");
+                                    statusBar.setText("接收中，百分比"+sp.百分比(fileSize,fileSize) + ",速度" + sp.speed(timecnt)+"\n");
                                     p("文件接收完毕");
                                     break;
                                 }
@@ -379,26 +380,20 @@ public class socketServer {
 
                                 int cnt = 0;//计数接收到多少文件字节长度
 
-                                String oldtxt = infoWin.getText();
                                 p("读取到文件名:"+f.getName());
                                 p("读取到文件长度:"+fileLenArr[i]);
                                 p("开始接收文件"+f.getName());
 
                                 FileOutputStream fr = new FileOutputStream(f);
+                                speedCheck sp = new speedCheck();
+                                sp.checkStart();
+                                int timecnt = 0;    long preT,curT;//当前时间，上一个时间
 
-                                long preT,curT; int timecnt = 0;
-                                //根据文件大小设置BLOCK值
-                                int BLOCK = 8192;
+                                int BLOCK = 8192;   //根据文件大小设置BLOCK值
                                 if(fileLenArr[i]<8192){
                                     BLOCK = fileLenArr[i]-1;
                                 }
-                                /**
-                                 * \r 能将光标定位到当前行的行首
-                                 * \b则是将光标回退一位
-                                 */
-
                                 preT = System.currentTimeMillis();
-
                                 while(true){//直到读完一个文件才退出
                                     //读取前先判断是否达到单字节读取的条件
                                     if(cnt+BLOCK > fileLenArr[i]){//如果再读取8192字节超过文件大小，就单字节读取
@@ -407,10 +402,18 @@ public class socketServer {
                                     len = inFromServer.read(buf,0,BLOCK);
                                     if(len>0){
                                         cnt+=len;
+                                        timecnt+=len;
+                                        curT = System.currentTimeMillis();
+                                        if(curT-preT>speedCheck.CHECK_TIME) {
+                                            statusBar.setText("接收中，百分比"+sp.百分比(cnt,fileLenArr[i]) + ",速度" + sp.speed(timecnt)+"\n");  //更新进度
+                                            preT = curT;
+                                            timecnt = 0;
+                                        }
                                         if(cnt==fileLenArr[i]){//如果读取到的恰好是文件大小，则直接退出，显然单字节读取只会是这种情况
                                             fr.write(buf,0,len);
                                             fr.close();
                                             p("文件接收完毕"+f.getName());
+                                            statusBar.setText("status:Normal");
                                             break;
                                         }
                                         fr.write(buf,0,len);
@@ -620,23 +623,7 @@ public class socketServer {
         jf.add(jsp);
         installDragFiles(infoWin);
     }
-    private void refreshSpeedInfo(String text){
-        infoWin.setText(text);
-        //这里不能延时，否则接收很慢,但是不延时又造成滚动问题，所以建议开线程更新UI
-        scrollBar.setValue(scrollBar.getMaximum());
-        /*new Thread(new Runnable() {
-        //这个线程可能导致重影问题，所以去除
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(100);//在更新Area后，稍稍延时，否则getMaximum（）获得的数据可能不是最后的最大值，无法滚动到最后一行
-                    scrollBar.setValue(scrollBar.getMaximum());
-                } catch (InterruptedException ex) {
-                    ex.printStackTrace();
-                }
-            }
-        }).start();*/
-    }
+
     class JTextAreaOutputStream extends OutputStream
     {
         private final JTextArea destination;

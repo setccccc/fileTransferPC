@@ -1,8 +1,17 @@
-        /*new Thread(() -> {
-            try {
-                Thread.sleep(100);//在更新Area后，稍稍延时，否则getMaximum（）获得的数据可能不是最后的最大值，无法滚动到最后一行
-                scrollBar.setValue(scrollBar.getMaximum());
-            } catch (InterruptedException ex) {
-                ex.printStackTrace();
+    private void refreshSpeedInfo(String text){
+        infoWin.setText(text);
+        //这里不能延时，否则接收很慢,但是不延时又造成滚动问题，所以建议开线程更新UI
+        scrollBar.setValue(scrollBar.getMaximum());
+        /*new Thread(new Runnable() {
+        //这个线程可能导致重影问题，所以去除
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(100);//在更新Area后，稍稍延时，否则getMaximum（）获得的数据可能不是最后的最大值，无法滚动到最后一行
+                    scrollBar.setValue(scrollBar.getMaximum());
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
             }
         }).start();*/
+    }

@@ -98,4 +98,8 @@ public class util {
         System.out.println(t);
     }
 
+    public static String getPercent(int cur,int total) {
+        int i = (int)((float)cur*100.0/(float)total);
+        return i+"%";
+    }
 }
