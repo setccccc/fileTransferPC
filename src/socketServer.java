@@ -308,9 +308,9 @@ public class socketServer {
                         int dataType = -1;
                         try{
                             dataType=dis.readInt();//先读取发过来的四个四节，堵塞读取，头四个字节是文件名的长
-                        }catch(SocketTimeoutException e){
+                        }catch(SocketTimeoutException e){//经常发现文件接收完毕后一段时间会产生Read timed out，所以这里捕获一下，重新尝试。
                             e.printStackTrace();
-                            if(tickState==TICK_BUSY) continue;
+                            continue;
                         }
                         if(dataType == DATA_SINGLE_FILE){//接收单个文件
                             tickState = TICK_BUSY;
